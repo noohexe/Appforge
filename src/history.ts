@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { AppForgeError } from "./errors.js";
 import { ensureDirectory, pathExists, resolveProjectPath } from "./fs-utils.js";
@@ -15,6 +16,7 @@ export interface BuildHistoryRecord {
 }
 
 const historyRelativePath = ".appforge/history/builds.json";
+const historyWrites = new Map<string, Promise<BuildHistoryRecord>>();
 
 export function buildHistoryPath(root: string): string {
   return resolveProjectPath(root, historyRelativePath);
@@ -33,12 +35,20 @@ export async function loadBuildHistory(root: string): Promise<BuildHistoryRecord
 }
 
 export async function recordBuildHistory(root: string, record: Omit<BuildHistoryRecord, "id">): Promise<BuildHistoryRecord> {
-  const file = buildHistoryPath(root);
-  const history = await loadBuildHistory(root);
-  const saved: BuildHistoryRecord = { ...record, id: `${Date.now()}-${history.length + 1}` };
-  await ensureDirectory(path.dirname(file));
-  await writeFile(file, `${JSON.stringify([...history, saved], null, 2)}\n`, "utf8");
-  return saved;
+  const projectRoot = path.resolve(root);
+  const previous = historyWrites.get(projectRoot) ?? Promise.resolve(undefined as never);
+  const current = previous.then(async () => {
+    const file = buildHistoryPath(projectRoot);
+    const history = await loadBuildHistory(projectRoot);
+    const saved: BuildHistoryRecord = { ...record, id: `${Date.now()}-${randomUUID()}` };
+    await ensureDirectory(path.dirname(file));
+    await writeFile(file, `${JSON.stringify([...history, saved], null, 2)}\n`, "utf8");
+    return saved;
+  });
+  historyWrites.set(projectRoot, current);
+  try { return await current; } finally {
+    if (historyWrites.get(projectRoot) === current) historyWrites.delete(projectRoot);
+  }
 }
 
 function isHistoryRecord(value: unknown): value is BuildHistoryRecord {

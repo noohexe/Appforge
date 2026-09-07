@@ -26,13 +26,14 @@ export function runProcess(command: string, args: string[], cwd: string): Promis
 
 export function runStreamingProcess(command: string, args: string[], cwd: string, onOutput: ProcessOutputHandler): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, shell: false });
+    const child = spawn(command, args, { cwd, shell: false, detached: process.platform !== "win32" });
     let stdout = "";
     let stderr = "";
     let interrupted = false;
     const forwardInterrupt = () => {
       interrupted = true;
-      child.kill("SIGINT");
+      if (child.pid && process.platform !== "win32") process.kill(-child.pid, "SIGINT");
+      else child.kill("SIGINT");
     };
     const cleanup = () => process.removeListener("SIGINT", forwardInterrupt);
     process.once("SIGINT", forwardInterrupt);

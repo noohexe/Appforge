@@ -4,6 +4,7 @@ import test from "node:test";
 import os from "node:os";
 import path from "node:path";
 import { validateConfig } from "../src/config.js";
+import { initProject } from "../src/core-operations.js";
 import { detectProject } from "../src/detect.js";
 import { resolveDevCommand } from "../src/dev.js";
 import { adapterFor } from "../src/targets.js";
@@ -38,6 +39,21 @@ test("round-trips build history under the AppForge-owned directory", async () =>
     assert.equal(history[1].status, "failure");
     assert.equal(history[1].error, "missing builder");
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("serializes concurrent history writes without losing records", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "appforge-history-concurrent-"));
+  try {
+    await Promise.all(Array.from({ length: 4 }, (_, index) => recordBuildHistory(root, { target: index % 2 ? "electron" : "all", status: "success", timestamp: new Date().toISOString(), durationMs: index, outputPaths: [] })));
+    const history = await loadBuildHistory(root);
+    assert.equal(history.length, 4);
+    assert.equal(new Set(history.map((item) => item.id)).size, 4);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("rejects CLI-style initialization of a missing project root", async () => {
+  const root = path.join(os.tmpdir(), `appforge-missing-${Date.now()}`);
+  await assert.rejects(() => initProject(root), /Project directory does not exist/);
 });
 
 test("selects the dev script before start with structured package-manager arguments", async () => {

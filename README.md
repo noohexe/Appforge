@@ -68,6 +68,8 @@ Successful and failed build attempts are appended to `.appforge/history/builds.j
 
 The dashboard can start, stop, and open a configured or detected web preview. Native packaging remains honest: Electron Builder and Capacitor CLI are only run when available, and AppForge does not invent Android/iOS projects or artifacts. Target status in Doctor reflects the local adapter prerequisites; a generated skeleton or Capacitor sync is not reported as an installable native package.
 
+The browser talks to the engine through `src/web/engine-client.ts`. Local development uses the Vite API bridge and checks `GET /api/health`; a future backend can be selected with `VITE_APPFORGE_API_URL`. GitHub Pages uses a static client that reports the engine as unavailable instead of attempting local filesystem operations.
+
 ## GitHub Pages
 
 The dashboard can be deployed as a static site at `https://noohexe.github.io/Appforge/` through `.github/workflows/deploy.yml`. GitHub Pages serves the Vite UI only; it cannot run the local API bridge, filesystem operations, child processes, CLI commands, or native builds. The hosted dashboard shows this limitation clearly unless a future backend is supplied through `VITE_APPFORGE_API_URL`.

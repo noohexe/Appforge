@@ -25,8 +25,10 @@ function appForgeApi(): Plugin {
     configureServer(server) {
       server.middlewares.use("/api", async (request, response, next) => {
         try {
+          if (!isAllowedOrigin(request.headers.origin)) return sendJson(response, { error: "Local AppForge API requests must come from this local dashboard." }, 403);
           const url = new URL(request.url ?? "/", "http://appforge.local");
           const method = request.method ?? "GET";
+          if (url.pathname === "/health" && method === "GET") return sendJson(response, { status: "ok", name: "AppForge", version: "0.1.0", engine: true, mode: "local" });
           if (url.pathname === "/connect" && method === "POST") {
             await devRuntime.stop();
             const body = await readJson(request);
@@ -118,6 +120,16 @@ function normalizeConfig(value: unknown): Parameters<typeof saveConfig>[1] {
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) throw new AppForgeError(`${field} must be a non-empty string.`);
   return value;
+}
+
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  try {
+    const url = new URL(origin);
+    return (url.protocol === "http:" || url.protocol === "https:") && (url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]");
+  } catch {
+    return false;
+  }
 }
 
 async function readJson(request: { [key: string]: unknown; on: (event: string, listener: (...args: any[]) => void) => void }): Promise<Record<string, any>> {

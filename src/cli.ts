@@ -3,14 +3,14 @@
 import path from "node:path";
 import { Command } from "commander";
 import { addTarget, loadConfig, removeTarget, saveConfig } from "./config.js";
-import { buildProject } from "./core-operations.js";
+import { buildProject, initProject } from "./core-operations.js";
 import { detectProject } from "./detect.js";
 import { resolveDevCommand } from "./dev.js";
 import { AppForgeError } from "./errors.js";
 import { ensureDirectory, pathExists, removeOwnedDirectory, resolveProjectPath } from "./fs-utils.js";
 import { runStreamingProcess } from "./process.js";
 import { adapterFor } from "./targets.js";
-import type { AppForgeConfig, Target } from "./types.js";
+import type { Target } from "./types.js";
 
 const program = new Command();
 program.name("appforge").description("Turn web apps into installable desktop and mobile apps").version("0.1.0");
@@ -19,12 +19,9 @@ program.command("init").description("Create appforge.config.json from the detect
   .option("-d, --dir <path>", "project directory", ".").option("-f, --force", "replace an existing configuration")
   .action(async ({ dir, force }: { dir: string; force?: boolean }) => {
     const root = path.resolve(dir);
-    const detection = await detectProject(root);
-    if (await pathExists(path.join(root, "appforge.config.json")) && !force) throw new AppForgeError("appforge.config.json already exists. Use --force to replace it.");
-    const config: AppForgeConfig = { $schema: "https://appforge.dev/schema/config.json", name: detection.packageName ?? path.basename(root), web: { root: ".", buildCommand: detection.buildCommand ?? "", outputDirectory: detection.outputDirectory ?? "dist", devCommand: "" }, targets: [] };
-    await saveConfig(root, config);
+    const result = await initProject(root, force);
     console.log(`Created ${path.join(root, "appforge.config.json")}`);
-    if (!detection.buildCommand) console.log("No build script was detected; set web.buildCommand before running build.");
+    if (!result.detection.buildCommand) console.log("No build script was detected; set web.buildCommand before running build.");
   });
 
 program.command("detect").description("Detect the web project framework and package manager")
