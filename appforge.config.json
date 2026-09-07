@@ -1,0 +1,11 @@
+{
+  "$schema": "https://appforge.dev/schema/config.json",
+  "name": "appforge",
+  "web": {
+    "root": ".",
+    "buildCommand": "tsc",
+    "outputDirectory": "dist",
+    "devCommand": ""
+  },
+  "targets": []
+}
