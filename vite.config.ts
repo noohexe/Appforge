@@ -135,4 +135,7 @@ function sendJson(response: { statusCode: number; setHeader: (name: string, valu
   response.end(JSON.stringify(value));
 }
 
-export default defineConfig({ plugins: [appForgeApi()] });
+export default defineConfig({
+  base: process.env.VITE_BASE_PATH ?? (process.env.GITHUB_ACTIONS ? "/Appforge/" : "/"),
+  plugins: [appForgeApi()],
+});

@@ -4,10 +4,10 @@
   "description": "Turn web apps into installable desktop and mobile apps",
   "type": "module",
   "bin": {
-    "appforge": "./dist/cli.js"
+    "appforge": "./dist/cli/cli.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "vite build && tsc",
     "dev": "vite",
     "cli": "tsx src/cli.ts",
     "test": "tsx --test test/*.test.ts"

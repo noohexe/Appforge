@@ -67,3 +67,9 @@ The bridge keeps one connected project in memory for the Vite process. Its endpo
 Successful and failed build attempts are appended to `.appforge/history/builds.json` with target, timestamp, duration, output paths, and error details. The dashboard Builds view reads these records; it does not create records for unexecuted work. The Development view manages one shell-free child process, captures stdout/stderr, detects configured or printed URLs, and stops the process when requested or when the Vite server closes.
 
 The dashboard can start, stop, and open a configured or detected web preview. Native packaging remains honest: Electron Builder and Capacitor CLI are only run when available, and AppForge does not invent Android/iOS projects or artifacts. Target status in Doctor reflects the local adapter prerequisites; a generated skeleton or Capacitor sync is not reported as an installable native package.
+
+## GitHub Pages
+
+The dashboard can be deployed as a static site at `https://noohexe.github.io/Appforge/` through `.github/workflows/deploy.yml`. GitHub Pages serves the Vite UI only; it cannot run the local API bridge, filesystem operations, child processes, CLI commands, or native builds. The hosted dashboard shows this limitation clearly unless a future backend is supplied through `VITE_APPFORGE_API_URL`.
+
+Use `npm run dev` locally when you need the full AppForge engine. The Pages workflow uses `npm ci`, sets the `/Appforge/` Vite base path, runs `npm run build`, and deploys `dist/` with the official GitHub Pages actions. In repository settings, set **Pages → Build and deployment → Source** to **GitHub Actions**.
